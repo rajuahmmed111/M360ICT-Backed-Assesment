@@ -2,7 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// datasource and generator setup
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -12,13 +11,6 @@ datasource db {
 //  ENUMS
 // ---------------------------------------------------------
 
-enum UserRole {
-  USER
-  BUSINESS_PARTNER
-  ADMIN
-  SUPER_ADMIN
-}
-
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -26,48 +18,51 @@ enum UserStatus {
 }
 
 // ---------------------------------------------------------
-//  MODEL
+//  MODELS
 // ---------------------------------------------------------
 
-model User {
-id String @id @default(uuid())
+model HrUser {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  fullName      String?
-  email         String     @unique
-  password      String     @default("123456")
-  profileImage  String     @default("https://i.ibb.co/Ps9gZ8DD/Profile-image.png")
-  contactNumber String?
-  address       String?
-  country       String?
-  role          UserRole   @default(USER)
-  status        UserStatus @default(ACTIVE)
-  fcmToken      String?    @default("")
-  age           Int?
-  dateOfBirth   DateTime?
-  profession    String?
-  gender        String?
-
-  otp        String?
-  otpExpiry  DateTime?
-  identifier String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // relationships
-
-  @@map("users")
+  @@map("hr_users")
 }
 
-model Admin {
-id String @id @default(uuid())
-  fullName    String?
-  phoneNumber String?
-  email       String  @unique
-  password    String
+model Employee {
+  id          String    @id @default(uuid())
+  name        String
+  age         Int
+  designation String
+  hiringDate  DateTime
+  dateOfBirth DateTime
+  salary      Decimal   @db.Decimal(10, 2)
+  photoPath   String?
+  deletedAt   DateTime? // optional soft delete
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // relationship
+  attendances Attendance[]
 
-  @@map("admins")
+  @@map("employees")
+}
+
+model Attendance {
+  id          String   @id @default(uuid())
+  date        DateTime @db.Date
+  checkInTime DateTime @db.Time
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // relationship
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("attendance")
 }
