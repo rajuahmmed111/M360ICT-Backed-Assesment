@@ -14,4 +14,4 @@ router.post(
   AuthController.Login,
 );
 
-export const hrUserRoutes = router;
+export const authRoutes = router;
