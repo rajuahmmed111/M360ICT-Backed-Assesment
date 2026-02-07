@@ -4,6 +4,9 @@ A RESTful HR Management backend system built with **Node.js**, **TypeScript**, *
 
 ---
 
+## Postman documentation
+  ```https://documenter.getpostman.com/view/30817322/2sBXc8q4R6```
+
 ## 🚀 Features
 
 - 🔐 JWT Authentication for HR users
