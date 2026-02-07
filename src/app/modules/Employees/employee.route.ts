@@ -1,10 +1,6 @@
 import { Router } from "express";
 import { EmployeeController } from "./employee.controller";
-import {
-  createEmployeeSchema,
-  EmployeeValidation,
-  updateEmployeeSchema,
-} from "./employee.validation";
+import { EmployeeValidation } from "./employee.validation";
 import multer from "multer";
 import path from "path";
 import validateRequest from "../../middlewares/validateRequest";
