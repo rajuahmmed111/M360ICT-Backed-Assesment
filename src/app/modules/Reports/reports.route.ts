@@ -1,5 +1,4 @@
 import { Router } from "express";
-import validateRequest from "../../middlewares/validateRequest";
 import { ReportsController } from "./reports.controller";
 
 const router = Router();

@@ -44,7 +44,7 @@ const getMonthlyAttendanceReport = async (
   });
 
   // Group by employee and calculate metrics
-  const employeeMap = new Map<number, MonthlyAttendanceReport>();
+  const employeeMap = new Map<string, MonthlyAttendanceReport>();
 
   for (const record of attendanceRecords) {
     const empId = record.employee.id;
