@@ -1,154 +1,152 @@
-import { PrismaClient } from '@prisma/client';
-import { Attendance, CreateAttendanceDto, UpdateAttendanceDto, AttendanceQueryParams } from './attendance.types';
+import {
+  Attendance,
+  CreateAttendanceDto,
+  UpdateAttendanceDto,
+  AttendanceListResponse,
+} from "./attendance.types";
+import { IPaginationOptions } from "../../../interfaces/paginations";
+import { paginationHelpers } from "../../../helpars/paginationHelper";
+import ApiError from "../../../errors/ApiErrors";
+import httpStatus from "http-status";
+import prisma from "../../../shared/prisma";
 
-const prisma = new PrismaClient();
+// create or update attendance
+const createOrUpdateAttendance = async (
+  data: CreateAttendanceDto,
+): Promise<Attendance> => {
+  const { employeeId, date, checkInTime } = data;
 
-export class AttendanceService {
-  async createOrUpdateAttendance(data: CreateAttendanceDto): Promise<Attendance> {
-    const { employeeId, date, checkInTime } = data;
+  // check if employee exists
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+  });
 
-    // Check if employee exists
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-    });
-
-    if (!employee) {
-      throw new Error('Employee not found');
-    }
-
-    // Convert checkInTime string to time format
-    const [hours, minutes] = checkInTime.split(':');
-    const checkInDateTime = new Date(date);
-    checkInDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-    // Check if attendance record already exists for this employee and date
-    const existingAttendance = await prisma.attendance.findUnique({
-      where: {
-        employeeId_date: {
-          employeeId,
-          date: new Date(date),
-        },
-      },
-    });
-
-    if (existingAttendance) {
-      // Update existing record
-      return await prisma.attendance.update({
-        where: { id: existingAttendance.id },
-        data: { checkInTime: checkInDateTime },
-      });
-    } else {
-      // Create new record
-      return await prisma.attendance.create({
-        data: {
-          employeeId,
-          date: new Date(date),
-          checkInTime: checkInDateTime,
-        },
-      });
-    }
+  if (!employee) {
+    throw new Error("Employee not found");
   }
 
-  async getAllAttendance(query: AttendanceQueryParams): Promise<{ 
-    attendances: Attendance[]; 
-    total: number; 
-    page: number; 
-    limit: number; 
-  }> {
-    const { employeeId, from, to, page = 1, limit = 10 } = query;
-    const skip = (page - 1) * limit;
+  // convert checkInTime string to time format
+  const [hours, minutes] = checkInTime.split(":");
+  const checkInDateTime = new Date(date);
+  checkInDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-    const where: any = {};
+  // check if attendance already exists employee and date
+  const existingAttendance = await prisma.attendance.findUnique({
+    where: {
+      employeeId_date: {
+        employeeId,
+        date: new Date(date),
+      },
+    },
+  });
 
-    if (employeeId) {
-      where.employeeId = employeeId;
-    }
+  if (existingAttendance) {
+    // update existing
+    return await prisma.attendance.update({
+      where: { id: existingAttendance.id },
+      data: { checkInTime: checkInDateTime },
+    });
+  } else {
+    // create attendance
+    return await prisma.attendance.create({
+      data: {
+        employeeId,
+        date: new Date(date),
+        checkInTime: checkInDateTime,
+      },
+    });
+  }
+};
 
-    if (from || to) {
-      where.date = {};
-      if (from) where.date.gte = from;
-      if (to) where.date.lte = to;
-    }
+// get all attendance with pagination
+const getAllAttendance = async (
+  options: IPaginationOptions,
+): Promise<AttendanceListResponse> => {
+  const { page, limit, skip } = paginationHelpers.calculatedPagination(options);
 
-    const [attendances, total] = await Promise.all([
-      prisma.attendance.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          employee: {
-            select: {
-              id: true,
-              name: true,
-              designation: true,
-            },
+  const attendances = await prisma.attendance.findMany({
+    skip,
+    take: limit,
+    orderBy:
+      options.sortBy && options.sortOrder
+        ? { [options.sortBy]: options.sortOrder }
+        : {
+            createdAt: "desc",
           },
-        },
-        orderBy: {
-          date: 'desc',
-        },
-      }),
-      prisma.attendance.count({ where }),
-    ]);
+  });
 
-    return {
-      attendances,
+  const total = await prisma.attendance.count();
+
+  return {
+    meta: {
       total,
       page,
       limit,
-    };
+    },
+    data: attendances,
+  };
+};
+
+// getAttendanceById
+const getAttendanceById = async (id: string): Promise<Attendance | null> => {
+  const result = await prisma.attendance.findUnique({
+    where: { id },
+  });
+
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Attendance record not found");
   }
 
-  async getAttendanceById(id: number): Promise<Attendance | null> {
-    return await prisma.attendance.findUnique({
-      where: { id },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            name: true,
-            designation: true,
-          },
-        },
-      },
-    });
+  return result;
+};
+
+// updateAttendance
+const updateAttendance = async (
+  id: string,
+  data: UpdateAttendanceDto,
+): Promise<Attendance> => {
+  const attendance = await prisma.attendance.findUnique({
+    where: { id },
+  });
+
+  if (!attendance) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Attendance record not found");
   }
 
-  async updateAttendance(id: number, data: UpdateAttendanceDto): Promise<Attendance> {
-    const attendance = await prisma.attendance.findUnique({
-      where: { id },
-    });
+  const updateData: any = { ...data };
 
-    if (!attendance) {
-      throw new Error('Attendance record not found');
-    }
-
-    const updateData: any = { ...data };
-
-    if (data.checkInTime) {
-      const [hours, minutes] = data.checkInTime.split(':');
-      const checkInDateTime = new Date(attendance.date);
-      checkInDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      updateData.checkInTime = checkInDateTime;
-    }
-
-    return await prisma.attendance.update({
-      where: { id },
-      data: updateData,
-    });
+  if (data.checkInTime) {
+    const [hours, minutes] = data.checkInTime.split(":");
+    const checkInDateTime = new Date(attendance.date);
+    checkInDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    updateData.checkInTime = checkInDateTime;
   }
 
-  async deleteAttendance(id: number): Promise<void> {
-    const attendance = await prisma.attendance.findUnique({
-      where: { id },
-    });
+  return await prisma.attendance.update({
+    where: { id },
+    data: updateData,
+  });
+};
 
-    if (!attendance) {
-      throw new Error('Attendance record not found');
-    }
+// deleteAttendance
+const deleteAttendance = async (id: string): Promise<void> => {
+  const attendance = await prisma.attendance.findUnique({
+    where: { id },
+  });
 
-    await prisma.attendance.delete({
-      where: { id },
-    });
+  if (!attendance) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Attendance record not found");
   }
-}
+
+  await prisma.attendance.delete({
+    where: { id },
+  });
+};
+
+export const AttendanceService = {
+  createOrUpdateAttendance,
+  getAllAttendance,
+  getAttendanceById,
+  updateAttendance,
+  deleteAttendance,
+};

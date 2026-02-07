@@ -1,151 +1,84 @@
-import { Request, Response } from 'express';
-import { AttendanceService } from './attendance.service';
-import { CreateAttendanceInput, UpdateAttendanceInput, AttendanceQueryInput } from './attendance.validation';
+import { Request, Response } from "express";
+import { AttendanceService } from "./attendance.service";
+import catchAsync from "../../../shared/catchAsync";
+import sendResponse from "../../../shared/sendResponse";
+import httpStatus from "http-status";
+import { paginationFields } from "../../../constants/pagination";
+import { pick } from "../../../shared/pick";
 
-export class AttendanceController {
-  constructor(private attendanceService: AttendanceService) {}
+// create or update attendance
+const createOrUpdateAttendance = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await AttendanceService.createOrUpdateAttendance(req.body);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Attendance recorded successfully",
+      data: result,
+    });
+  },
+);
 
-  async createOrUpdateAttendance(req: Request, res: Response): Promise<void> {
-    try {
-      const attendanceData: CreateAttendanceInput = req.body;
-      const attendance = await this.attendanceService.createOrUpdateAttendance(attendanceData);
-      
-      res.status(201).json({
-        success: true,
-        message: 'Attendance recorded successfully',
-        data: attendance,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-        });
-      }
-    }
-  }
+// get all attendance with pagination
+const getAllAttendance = catchAsync(async (req: Request, res: Response) => {
+  const options = pick(req.query, paginationFields);
 
-  async getAllAttendance(req: Request, res: Response): Promise<void> {
-    try {
-      const query: AttendanceQueryInput = req.query as any;
-      const result = await this.attendanceService.getAllAttendance(query);
-      
-      res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-  }
+  const result = await AttendanceService.getAllAttendance(options);
 
-  async getAttendanceById(req: Request, res: Response): Promise<void> {
-    try {
-      const id = parseInt(req.params.id);
-      
-      if (isNaN(id)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid attendance ID',
-        });
-        return;
-      }
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Attendances fetched successfully",
+    data: result,
+  });
+});
 
-      const attendance = await this.attendanceService.getAttendanceById(id);
-      
-      if (!attendance) {
-        res.status(404).json({
-          success: false,
-          message: 'Attendance record not found',
-        });
-        return;
-      }
+// get attendance by id
+const getAttendanceById = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
 
-      res.status(200).json({
-        success: true,
-        data: attendance,
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-  }
+  const result = await AttendanceService.getAttendanceById(id);
 
-  async updateAttendance(req: Request, res: Response): Promise<void> {
-    try {
-      const id = parseInt(req.params.id);
-      
-      if (isNaN(id)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid attendance ID',
-        });
-        return;
-      }
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Attendance fetched successfully",
+    data: result,
+  });
+});
 
-      const updateData: UpdateAttendanceInput = req.body;
-      const attendance = await this.attendanceService.updateAttendance(id, updateData);
-      
-      res.status(200).json({
-        success: true,
-        message: 'Attendance updated successfully',
-        data: attendance,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-        });
-      }
-    }
-  }
+// update attendance
+const updateAttendance = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
 
-  async deleteAttendance(req: Request, res: Response): Promise<void> {
-    try {
-      const id = parseInt(req.params.id);
-      
-      if (isNaN(id)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid attendance ID',
-        });
-        return;
-      }
+  const result = await AttendanceService.updateAttendance(id, req.body);
 
-      await this.attendanceService.deleteAttendance(id);
-      
-      res.status(200).json({
-        success: true,
-        message: 'Attendance deleted successfully',
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-        });
-      }
-    }
-  }
-}
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Attendance updated successfully",
+    data: result,
+  });
+});
+
+// delete attendance
+const deleteAttendance = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
+
+  const result = await AttendanceService.deleteAttendance(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Attendance deleted successfully",
+    data: result,
+  });
+});
+
+export const AttendanceController = {
+  createOrUpdateAttendance,
+  getAllAttendance,
+  getAttendanceById,
+  updateAttendance,
+  deleteAttendance,
+};
