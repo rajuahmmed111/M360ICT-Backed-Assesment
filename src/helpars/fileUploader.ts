@@ -68,7 +68,7 @@ const allowedTypes = [
 const fileFilter = (
   req: Express.Request,
   file: Express.Multer.File,
-  cb: multer.FileFilterCallback
+  cb: multer.FileFilterCallback,
 ) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
@@ -91,32 +91,7 @@ const storage = multer.diskStorage({
 // Multer middleware
 const upload = multer({ storage, fileFilter });
 
-const profileImage = upload.single("profileImage");
-
-const hotelLogo = upload.single("businessLogo");
-const hotelImages = upload.array("hotelImages", 40);
-const hotelRoomImages = upload.array("hotelRoomImages", 40);
-const hotelDocs = upload.array("hotelDocs", 40);
-
-const securityLogo = upload.single("securityLogo");
-const securityImages = upload.array("securityImages", 40);
-const securityDocs = upload.array("securityDocs", 40);
-
-const carBusinessLogo = upload.single("businessLogo");
-const carImages = upload.array("carImages", 40);
-const carDocs = upload.array("carDocs", 40);
-
-const attractionBusinessLogo = upload.single("businessLogo");
-const attractionImages = upload.array("attractionImages", 40);
-const attractionDocs = upload.array("attractionDocs", 40);
-
-const uploadMessageImages = upload.array("messageImages", 40);
-
-const newsImage = upload.array("image", 40);
-
-const advertiseVideo = upload.single("advertiseVideo");
-
-const invertorRelationImage = upload.single("invertorRelationImage");
+const photoPath = upload.single("photoPath");
 
 // Cloudinary configuration
 cloudinary.config({
@@ -127,7 +102,7 @@ cloudinary.config({
 
 // Cloudinary uploader function
 const uploadToCloudinary = async (
-  file: IUploadedFile
+  file: IUploadedFile,
 ): Promise<ICloudinaryUploadResponse | undefined> => {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(file.path)) {
@@ -159,38 +134,14 @@ const uploadToCloudinary = async (
         } else {
           resolve(result as ICloudinaryUploadResponse | undefined);
         }
-      }
+      },
     );
   });
 };
 
 export const uploadFile = {
   upload,
-  profileImage,
-  hotelLogo,
-  hotelImages,
-  hotelRoomImages,
-  hotelDocs,
-
-  securityLogo,
-  securityImages,
-  securityDocs,
-
-  carBusinessLogo,
-  carImages,
-  carDocs,
-
-  attractionBusinessLogo,
-  attractionImages,
-  attractionDocs,
-
-  uploadMessageImages,
-
-  newsImage,
-
-  advertiseVideo,
-
-  invertorRelationImage,
+  photoPath,
 
   uploadToCloudinary,
 };
