@@ -65,8 +65,8 @@ src/
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/your-username/hr-management-backend.git
-cd hr-management-backend
+https://github.com/rajuahmmed111/M360ICT-Backed-Assesment.git
+cd M360ICT-Backed-Assesment
 
 
 npm install
