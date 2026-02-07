@@ -23,7 +23,12 @@ const createOrUpdateAttendance = catchAsync(
 const getAllAttendance = catchAsync(async (req: Request, res: Response) => {
   const options = pick(req.query, paginationFields);
 
-  const result = await AttendanceService.getAllAttendance(options);
+  const filters = pick(req.query, ["employee_id", "date", "from", "to"]);
+
+  const result = await AttendanceService.getAllAttendance(
+    options,
+    filters
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -32,6 +37,7 @@ const getAllAttendance = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
 
 // get attendance by id
 const getAttendanceById = catchAsync(async (req: Request, res: Response) => {

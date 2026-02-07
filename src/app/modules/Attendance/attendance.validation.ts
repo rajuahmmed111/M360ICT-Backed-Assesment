@@ -4,12 +4,9 @@ const createAttendanceSchema = z.object({
   body: z.object({
     employeeId: z.string({ required_error: "Employee ID is required" }),
     date: z.coerce.date({ invalid_type_error: "Invalid date" }),
- checkInTime: z
-  .string()
-  .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: "Check-in time must be in HH:MM 24-hour format",
-  }),
-
+    checkInTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
+      message: "Check-in time must be in HH:MM 24-hour format",
+    }),
   }),
 });
 
@@ -19,8 +16,8 @@ const updateAttendanceSchema = z.object({
     date: z.coerce.date().optional(),
     checkInTime: z
       .string()
-      .regex(/^([0]?[1-9]|1[0-2]):[0-5][0-9](:[0-5][0-9])?\s?(AM|PM)$/i, {
-        message: "Check-in time must be in HH:MM[:SS] AM/PM format",
+      .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
+        message: "Check-in time must be in HH:MM 24-hour format",
       })
       .optional(),
   }),

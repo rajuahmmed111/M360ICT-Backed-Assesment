@@ -2,6 +2,7 @@ import { Router } from "express";
 import { AttendanceController } from "./attendance.controller";
 import validateRequest from "../../middlewares/validateRequest";
 import { AttendanceValidation } from "./attendance.validation";
+import auth from "../../middlewares/auth";
 
 const router = Router();
 
@@ -26,6 +27,6 @@ router.patch(
 );
 
 // delete attendance
-router.delete("/:id", AttendanceController.deleteAttendance);
+router.delete("/:id", auth(), AttendanceController.deleteAttendance);
 
 export const attendanceRoutes = router;
