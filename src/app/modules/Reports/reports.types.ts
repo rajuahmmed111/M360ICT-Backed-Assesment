@@ -7,7 +7,7 @@ export interface MonthlyAttendanceReport {
 }
 
 export interface MonthlyReportQuery {
-  month: string; // YYYY-MM format
+  month: string; // YYYY-MM
   employeeId?: string;
 }
 

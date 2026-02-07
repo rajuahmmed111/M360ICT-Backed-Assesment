@@ -1,92 +1,99 @@
+import prisma from "../../../shared/prisma";
+import httpStatus from "http-status";
 import {
   MonthlyAttendanceReport,
   MonthlyReportQuery,
   MonthlyReportResponse,
 } from "./reports.types";
-import prisma from "../../../shared/prisma";
+import ApiError from "../../../errors/ApiErrors";
 
-// get monthly attendance report
+const LATE_HOUR = 9;
+const LATE_MINUTE = 45;
+
 const getMonthlyAttendanceReport = async (
   query: MonthlyReportQuery,
 ): Promise<MonthlyReportResponse> => {
-  const { month, employeeId } = query;
-
-  // parse month to get start and end dates
-  const [year, monthNum] = month.split("-").map(Number);
-  const startDate = new Date(year, monthNum - 1, 1);
-  const endDate = new Date(year, monthNum, 0); // Last day of the month
-
-  // Build where clause
-  const where: any = {
-    date: {
-      gte: startDate,
-      lte: endDate,
-    },
-  };
-
-  if (employeeId) {
-    where.employeeId = employeeId;
+  // month validation
+  if (!query.month) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Month is required (YYYY-MM)");
   }
 
-  // get attendance employee data
-  const attendanceRecords = await prisma.attendance.findMany({
-    where: where,
-    include: {
-      employee: {
-        select: {
-          id: true,
-          name: true,
-          designation: true,
-        },
+  if (!/^\d{4}-\d{2}$/.test(query.month)) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Month must be in YYYY-MM format",
+    );
+  }
+
+  const [yearStr, monthStr] = query.month.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+
+  // range
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 1);
+
+  const attendances = await prisma.attendance.findMany({
+    where: {
+      date: {
+        gte: startDate,
+        lt: endDate,
       },
+      ...(query.employeeId && {
+        employeeId: query.employeeId,
+      }),
     },
-    orderBy: [{ employee: { name: "asc" } }, { date: "asc" }],
+    include: {
+      employee: true,
+    },
   });
 
   // group by employee
-  const employeeMap = new Map<string, MonthlyAttendanceReport>();
+  const employeeMap: Record<string, MonthlyAttendanceReport> = {};
 
-  for (const record of attendanceRecords) {
-    const empId = record.employee.id;
+  let totalDaysPresent = 0;
+  let totalLateArrivals = 0;
 
-    if (!employeeMap.has(empId)) {
-      employeeMap.set(empId, {
+  attendances.forEach((attendance) => {
+    const empId = attendance.employeeId;
+
+    // initialize employee
+    if (!employeeMap[empId]) {
+      employeeMap[empId] = {
         employeeId: empId,
-        name: record.employee.name,
-        designation: record.employee.designation,
+        name: attendance.employee.name,
+        designation: attendance.employee.designation,
         daysPresent: 0,
         timesLate: 0,
-      });
+      };
     }
 
-    const report = employeeMap.get(empId)!;
-    report.daysPresent++;
+    // days present count
+    employeeMap[empId].daysPresent += 1;
+    totalDaysPresent += 1;
 
-    // check if late (after 9:45 AM)
-    const checkInHour = record.checkInTime.getHours();
-    const checkInMinute = record.checkInTime.getMinutes();
-    const totalMinutes = checkInHour * 60 + checkInMinute;
-    const lateThreshold = 9 * 60 + 45; // 9:45 AM in minutes
+    const checkIn = new Date(attendance.checkInTime);
 
-    if (totalMinutes > lateThreshold) {
-      report.timesLate++;
+    const hour = checkIn.getHours();
+    const minute = checkIn.getMinutes();
+
+    if (hour > LATE_HOUR || (hour === LATE_HOUR && minute > LATE_MINUTE)) {
+      employeeMap[empId].timesLate += 1;
+      totalLateArrivals += 1;
     }
-  }
+  });
 
-  const report = Array.from(employeeMap.values());
-
-  // calculate summary
-  const summary = {
-    totalEmployees: report.length,
-    totalDaysPresent: report.reduce((sum, emp) => sum + emp.daysPresent, 0),
-    totalLateArrivals: report.reduce((sum, emp) => sum + emp.timesLate, 0),
-  };
+  const report = Object.values(employeeMap);
 
   return {
-    month,
-    employeeId,
+    month: query.month,
+    employeeId: query.employeeId,
     report,
-    summary,
+    summary: {
+      totalEmployees: report.length,
+      totalDaysPresent,
+      totalLateArrivals,
+    },
   };
 };
 

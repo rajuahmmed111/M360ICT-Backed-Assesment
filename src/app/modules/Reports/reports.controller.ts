@@ -1,14 +1,18 @@
 import { Request, Response } from "express";
-import { ReportsService } from "./reports.service";
+import httpStatus from "http-status";
 import catchAsync from "../../../shared/catchAsync";
 import sendResponse from "../../../shared/sendResponse";
-import httpStatus from "http-status";
+import { ReportsService } from "./reports.service";
 import { MonthlyReportQuery } from "./reports.types";
 
-// get monthly attendance report
 const getMonthlyAttendanceReport = catchAsync(
   async (req: Request, res: Response) => {
-    const query: MonthlyReportQuery = req.query as any;
+
+    const query: MonthlyReportQuery = {
+      month: req.query.month as string,
+      employeeId: req.query.employeeId as string | undefined,
+    };
+
     const report = await ReportsService.getMonthlyAttendanceReport(query);
 
     sendResponse(res, {
@@ -17,7 +21,7 @@ const getMonthlyAttendanceReport = catchAsync(
       message: "Monthly attendance report fetched successfully",
       data: report,
     });
-  },
+  }
 );
 
 export const ReportsController = {
