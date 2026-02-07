@@ -17,19 +17,6 @@ const createHrUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// hr login
-const hrLogin = catchAsync(async (req: Request, res: Response) => {
-  const loginData = req.body;
-  const result = await HrUserService.hrLogin(loginData);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Login successful",
-    data: result,
-  });
-});
-
 // get hr user by id
 const getHrUserById = catchAsync(async (req: Request, res: Response) => {
   const userId = req.params.id;
@@ -46,6 +33,5 @@ const getHrUserById = catchAsync(async (req: Request, res: Response) => {
 
 export const HrUserController = {
   createHrUser,
-  hrLogin,
   getHrUserById,
 };

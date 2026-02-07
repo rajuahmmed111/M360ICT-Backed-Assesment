@@ -1,12 +1,8 @@
-import { PrismaClient, UserStatus } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import {
   HrUser,
   CreateHrUserDto,
-  LoginDto,
-  LoginResponse,
-  JwtPayload,
 } from "./hr_user.types";
 import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
@@ -45,43 +41,6 @@ const createHrUser = async (
 };
 
 
-// hr login
-const hrLogin = async (data: LoginDto): Promise<LoginResponse> => {
-  const user = await prisma.hrUser.findUnique({
-    where: { email: data.email },
-  });
-
-  if (!user) {
-    throw new Error("Invalid credentials");
-  }
-
-  const isPasswordValid = await bcrypt.compare(
-    data.password,
-    user.passwordHash,
-  );
-  if (!isPasswordValid) {
-    throw new Error("Invalid credentials");
-  }
-
-  const payload: JwtPayload = {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-  };
-
-  const token = jwt.sign(payload, process.env.JWT_SECRET!, {
-    expiresIn: "24h",
-  });
-
-  return {
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-    },
-    token,
-  };
-};
 
 // get hr user by id
 const getHrUserById = async (
@@ -104,6 +63,5 @@ const getHrUserById = async (
 
 export const HrUserService = {
   createHrUser,
-  hrLogin,
   getHrUserById,
 };

@@ -16,11 +16,4 @@ router.post(
   HrUserController.createHrUser,
 );
 
-// hr user login
-router.post(
-  "/login",
-  validateRequest(HrUserValidation.loginSchema),
-  HrUserController.hrLogin,
-);
-
 export const hrUserRoutes = router;
