@@ -9,8 +9,6 @@ import ApiError from "../../errors/ApiErrors";
 import { jwtHelpers } from "../../helpars/jwtHelpers";
 import prisma from "../../shared/prisma";
 
-//  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-
 const auth = () => {
   return async (
     req: Request & { user?: any },

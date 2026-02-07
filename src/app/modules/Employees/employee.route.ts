@@ -4,6 +4,7 @@ import { EmployeeValidation } from "./employee.validation";
 import validateRequest from "../../middlewares/validateRequest";
 import { uploadFile } from "../../../helpars/fileUploader";
 import { parseBodyData } from "../../middlewares/parseNestedJson";
+import auth from "../../middlewares/auth";
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.get("/:id", EmployeeController.getEmployeeById);
 // create employee
 router.post(
   "/",
+  auth(),
   uploadFile.photoPath,
   validateRequest(EmployeeValidation.createEmployeeSchema),
   parseBodyData,
