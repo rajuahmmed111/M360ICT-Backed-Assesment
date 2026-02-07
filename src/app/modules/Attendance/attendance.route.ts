@@ -1,21 +1,12 @@
 import { Router } from "express";
 import { AttendanceController } from "./attendance.controller";
-import { AttendanceService } from "./attendance.service";
-import {
-  createAttendanceSchema,
-  updateAttendanceSchema,
-  attendanceQuerySchema,
-} from "./attendance.validation";
 import validateRequest from "../../middlewares/validateRequest";
+import { AttendanceValidation } from "./attendance.validation";
 
 const router = Router();
 
 // get all attendance with pagination
-router.get(
-  "/",
-  validateRequest(attendanceQuerySchema),
-  AttendanceController.getAllAttendance,
-);
+router.get("/", AttendanceController.getAllAttendance);
 
 // get attendance by id
 router.get("/:id", AttendanceController.getAttendanceById);
@@ -23,14 +14,14 @@ router.get("/:id", AttendanceController.getAttendanceById);
 // create or update an attendance entry
 router.post(
   "/",
-  validateRequest(createAttendanceSchema),
+  validateRequest(AttendanceValidation.createAttendanceSchema),
   AttendanceController.createOrUpdateAttendance,
 );
 
 // update an attendance entry
 router.patch(
   "/:id",
-  validateRequest(updateAttendanceSchema),
+  validateRequest(AttendanceValidation.updateAttendanceSchema),
   AttendanceController.updateAttendance,
 );
 
