@@ -11,13 +11,13 @@ const getMonthlyAttendanceReport = async (
 ): Promise<MonthlyReportResponse> => {
   const { month, employeeId } = query;
 
-  // Parse month to get start and end dates
+  // parse month to get start and end dates
   const [year, monthNum] = month.split("-").map(Number);
   const startDate = new Date(year, monthNum - 1, 1);
   const endDate = new Date(year, monthNum, 0); // Last day of the month
 
   // Build where clause
-  const whereClause: any = {
+  const where: any = {
     date: {
       gte: startDate,
       lte: endDate,
@@ -25,12 +25,12 @@ const getMonthlyAttendanceReport = async (
   };
 
   if (employeeId) {
-    whereClause.employeeId = employeeId;
+    where.employeeId = employeeId;
   }
 
-  // Get attendance records with employee data
+  // get attendance employee data
   const attendanceRecords = await prisma.attendance.findMany({
-    where: whereClause,
+    where: where,
     include: {
       employee: {
         select: {
@@ -43,7 +43,7 @@ const getMonthlyAttendanceReport = async (
     orderBy: [{ employee: { name: "asc" } }, { date: "asc" }],
   });
 
-  // Group by employee and calculate metrics
+  // group by employee
   const employeeMap = new Map<string, MonthlyAttendanceReport>();
 
   for (const record of attendanceRecords) {
@@ -62,7 +62,7 @@ const getMonthlyAttendanceReport = async (
     const report = employeeMap.get(empId)!;
     report.daysPresent++;
 
-    // Check if late (after 9:45 AM)
+    // check if late (after 9:45 AM)
     const checkInHour = record.checkInTime.getHours();
     const checkInMinute = record.checkInTime.getMinutes();
     const totalMinutes = checkInHour * 60 + checkInMinute;
@@ -75,7 +75,7 @@ const getMonthlyAttendanceReport = async (
 
   const report = Array.from(employeeMap.values());
 
-  // Calculate summary
+  // calculate summary
   const summary = {
     totalEmployees: report.length,
     totalDaysPresent: report.reduce((sum, emp) => sum + emp.daysPresent, 0),
