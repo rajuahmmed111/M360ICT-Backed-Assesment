@@ -1,21 +1,26 @@
 import { Router } from "express";
-import { createHrUserSchema, loginSchema } from "./hr_user.validation";
 import validateRequest from "../../middlewares/validateRequest";
 import { HrUserController } from "./hr_user.controller";
+import { HrUserValidation } from "./hr_user.validation";
+import auth from "../../middlewares/auth";
 
 const router = Router();
 
 // get hr user by id
-router.get("/:id", HrUserController.getHrUserById);
+router.get("/:id", auth(), HrUserController.getHrUserById);
 
 // create HR user
 router.post(
   "/register",
-  validateRequest(createHrUserSchema),
+  validateRequest(HrUserValidation.createHrUserSchema),
   HrUserController.createHrUser,
 );
 
 // hr user login
-router.post("/login", validateRequest(loginSchema), HrUserController.hrLogin);
+router.post(
+  "/login",
+  validateRequest(HrUserValidation.loginSchema),
+  HrUserController.hrLogin,
+);
 
 export const hrUserRoutes = router;

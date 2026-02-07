@@ -9,28 +9,29 @@ import {
   JwtPayload,
 } from "./hr_user.types";
 import prisma from "../../../shared/prisma";
+import ApiError from "../../../errors/ApiErrors";
+import httpStatus from "http-status";
 
 // create hr user
 const createHrUser = async (
-  data: CreateHrUserDto,
+  data: CreateHrUserDto
 ): Promise<Omit<HrUser, "passwordHash">> => {
+
   const existingUser = await prisma.hrUser.findUnique({
     where: { email: data.email },
   });
 
   if (existingUser) {
-    throw new Error("User with this email already exists");
+    throw new ApiError(httpStatus.BAD_REQUEST, "User already exists");
   }
 
-  const saltRounds = 10;
-  const passwordHash = await bcrypt.hash(data.password, saltRounds);
+  const passwordHash = await bcrypt.hash(data.password, 10);
 
-  const user = await prisma.hrUser.create({
+  return await prisma.hrUser.create({
     data: {
       email: data.email,
       passwordHash,
       name: data.name,
-      status: UserStatus.ACTIVE,
     },
     select: {
       id: true,
@@ -41,9 +42,8 @@ const createHrUser = async (
       updatedAt: true,
     },
   });
-
-  return user;
 };
+
 
 // hr login
 const hrLogin = async (data: LoginDto): Promise<LoginResponse> => {
