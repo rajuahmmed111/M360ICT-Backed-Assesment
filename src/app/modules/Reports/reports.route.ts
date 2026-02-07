@@ -1,18 +1,10 @@
-import { Router } from 'express';
-import { ReportsController } from './reports.controller';
-import { ReportsService } from './reports.service';
-import { validateRequest } from '../../middleware/validateRequest';
-import { monthlyReportQuerySchema } from './reports.validation';
-import { authMiddleware } from '../../middleware/auth';
+import { Router } from "express";
+import validateRequest from "../../middlewares/validateRequest";
+import { ReportsController } from "./reports.controller";
 
 const router = Router();
-const reportsService = new ReportsService();
-const reportsController = new ReportsController(reportsService);
 
-// Apply auth middleware to all routes
-router.use(authMiddleware);
+// get monthly attendance report
+router.get("/attendance", ReportsController.getMonthlyAttendanceReport);
 
-// GET /reports/attendance - Monthly attendance summary
-router.get('/attendance', validateRequest(monthlyReportQuerySchema, 'query'), reportsController.getMonthlyAttendanceReport.bind(reportsController));
-
-export { router as reportsRoutes };
+export const reportsRoutes = router;

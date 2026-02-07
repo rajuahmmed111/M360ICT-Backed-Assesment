@@ -1,5 +1,5 @@
 export interface MonthlyAttendanceReport {
-  employeeId: number;
+  employeeId: string;
   name: string;
   designation: string;
   daysPresent: number;
@@ -8,12 +8,12 @@ export interface MonthlyAttendanceReport {
 
 export interface MonthlyReportQuery {
   month: string; // YYYY-MM format
-  employeeId?: number;
+  employeeId?: string;
 }
 
 export interface MonthlyReportResponse {
   month: string;
-  employeeId?: number;
+  employeeId?: string;
   report: MonthlyAttendanceReport[];
   summary: {
     totalEmployees: number;
