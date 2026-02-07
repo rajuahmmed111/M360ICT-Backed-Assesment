@@ -7,6 +7,7 @@ import sendResponse from "../../../shared/sendResponse";
 import { uploadFile } from "../../../helpars/fileUploader";
 import httpStatus from "http-status";
 import catchAsync from "../../../shared/catchAsync";
+import { filterField } from "./employee.constant";
 
 // create employee
 const createEmployee = catchAsync(
@@ -40,8 +41,9 @@ const createEmployee = catchAsync(
 const getAllEmployees = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const options = pick(req.query, paginationFields);
+    const filters = pick(req.query, filterField);
 
-    const result = await EmployeeService.getAllEmployees(options);
+    const result = await EmployeeService.getAllEmployees(options, filters);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,

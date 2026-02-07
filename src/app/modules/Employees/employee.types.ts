@@ -2,6 +2,11 @@ import { Employee as PrismaEmployee } from "@prisma/client";
 
 export type Employee = PrismaEmployee;
 
+export type IEmployeeFilterRequest = {
+  searchTerm?: string;
+  name?: string;
+};
+
 export interface CreateEmployeeDto {
   name: string;
   age: number;

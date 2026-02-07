@@ -3,6 +3,7 @@ import {
   CreateEmployeeDto,
   UpdateEmployeeDto,
   EmployeeListResponse,
+  IEmployeeFilterRequest,
 } from "./employee.types";
 import { IPaginationOptions } from "../../../interfaces/paginations";
 import { paginationHelpers } from "../../../helpars/paginationHelper";
@@ -10,6 +11,7 @@ import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { Prisma } from "@prisma/client";
+import { searchableFields } from "./employee.constant";
 
 // create employee
 const createEmployee = async (data: CreateEmployeeDto): Promise<Employee> => {
@@ -29,28 +31,46 @@ const createEmployee = async (data: CreateEmployeeDto): Promise<Employee> => {
 // get all employees
 const getAllEmployees = async (
   options: IPaginationOptions,
+  params: IEmployeeFilterRequest,
 ): Promise<EmployeeListResponse> => {
   const { page, limit, skip } = paginationHelpers.calculatedPagination(options);
 
-  // filters
-  const filters: Prisma.EmployeeWhereInput = {
+  const { searchTerm } = params;
+
+  const filters: Prisma.EmployeeWhereInput[] = [];
+
+  // soft delete filter
+  filters.push({
     deletedAt: null,
-  };
+  });
+
+  // text search
+  if (searchTerm) {
+    filters.push({
+      OR: searchableFields.map((field) => ({
+        [field]: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
+
+  const where: Prisma.EmployeeWhereInput =
+    filters.length > 0 ? { AND: filters } : {};
 
   const result = await prisma.employee.findMany({
-    where: filters, // filter apply
+    where,
     skip,
     take: limit,
     orderBy:
       options.sortBy && options.sortOrder
         ? { [options.sortBy]: options.sortOrder }
-        : {
-            createdAt: "desc",
-          },
+        : { createdAt: "desc" },
   });
 
   const total = await prisma.employee.count({
-    where: filters,
+    where,
   });
 
   return {
@@ -98,7 +118,7 @@ const updateEmployee = async (
 
 // employee soft delete
 const softDeleteEmployee = async (id: string): Promise<void> => {
-  console.log(id)
+  console.log(id);
   await prisma.employee.update({
     where: { id },
     data: {
