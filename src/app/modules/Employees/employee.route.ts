@@ -1,24 +1,27 @@
-import { Router } from 'express';
-import { EmployeeController } from './employee.controller';
-import { EmployeeService } from './employee.service';
-import { validateRequest } from '../../middleware/validateRequest';
-import { createEmployeeSchema, updateEmployeeSchema, employeeQuerySchema } from './employee.validation';
-import { authMiddleware } from '../../middleware/auth';
-import multer from 'multer';
-import path from 'path';
+import { Router } from "express";
+import { EmployeeController } from "./employee.controller";
+import {
+  createEmployeeSchema,
+  EmployeeValidation,
+  updateEmployeeSchema,
+} from "./employee.validation";
+import multer from "multer";
+import path from "path";
+import validateRequest from "../../middlewares/validateRequest";
 
 const router = Router();
-const employeeService = new EmployeeService();
-const employeeController = new EmployeeController(employeeService);
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, process.env.UPLOAD_PATH || './uploads');
+    cb(null, process.env.UPLOAD_PATH || "./uploads");
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(
+      null,
+      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname),
+    );
   },
 });
 
@@ -29,33 +32,42 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase(),
+    );
     const mimetype = allowedTypes.test(file.mimetype);
 
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'));
+      cb(new Error("Only image files are allowed!"));
     }
   },
 });
 
-// Apply auth middleware to all routes
-router.use(authMiddleware);
+// get all employees
+router.get("/", EmployeeController.getAllEmployees);
 
-// GET /employees - List all employees with pagination and search
-router.get('/', validateRequest(employeeQuerySchema, 'query'), employeeController.getAllEmployees.bind(employeeController));
+// get employee by id
+router.get("/:id", EmployeeController.getEmployeeById);
 
-// GET /employees/:id - Get a single employee by ID
-router.get('/:id', employeeController.getEmployeeById.bind(employeeController));
+// create employee
+router.post(
+  "/",
+  upload.single("photo"),
+  validateRequest(EmployeeValidation.createEmployeeSchema),
+  EmployeeController.createEmployee,
+);
 
-// POST /employees - Create a new employee (supports file upload)
-router.post('/', upload.single('photo'), validateRequest(createEmployeeSchema), employeeController.createEmployee.bind(employeeController));
+// update employee
+router.put(
+  "/:id",
+  upload.single("photo"),
+  validateRequest(EmployeeValidation.updateEmployeeSchema),
+  EmployeeController.updateEmployee,
+);
 
-// PUT /employees/:id - Update employee details (supports file upload)
-router.put('/:id', upload.single('photo'), validateRequest(updateEmployeeSchema), employeeController.updateEmployee.bind(employeeController));
+// delete employee
+router.delete("/:id", EmployeeController.deleteEmployee);
 
-// DELETE /employees/:id - Delete an employee
-router.delete('/:id', employeeController.deleteEmployee.bind(employeeController));
-
-export { router as employeeRoutes };
+export const employeeRoutes = router;

@@ -1,86 +1,92 @@
-import { PrismaClient } from '@prisma/client';
-import { Employee, CreateEmployeeDto, UpdateEmployeeDto, EmployeeQueryParams } from './employee.types';
+import {
+  Employee,
+  CreateEmployeeDto,
+  UpdateEmployeeDto,
+  EmployeeListResponse,
+} from "./employee.types";
+import { IPaginationOptions } from "../../../interfaces/paginations";
+import { paginationHelpers } from "../../../helpars/paginationHelper";
+import prisma from "../../../shared/prisma";
+import ApiError from "../../../errors/ApiErrors";
+import httpStatus from "http-status";
 
-const prisma = new PrismaClient();
+// create employee
+const createEmployee = async (data: CreateEmployeeDto): Promise<Employee> => {
+  return await prisma.employee.create({
+    data: {
+      ...data,
+      salary: data.salary,
+    },
+  });
+};
 
-export class EmployeeService {
-  async createEmployee(data: CreateEmployeeDto): Promise<Employee> {
-    return await prisma.employee.create({
-      data: {
-        ...data,
-        salary: data.salary,
-      },
-    });
-  }
+// get all employees
+const getAllEmployees = async (
+  options: IPaginationOptions,
+): Promise<EmployeeListResponse> => {
+  const { page, limit, skip } = paginationHelpers.calculatedPagination(options);
 
-  async getAllEmployees(query: EmployeeQueryParams): Promise<{ employees: Employee[]; total: number; page: number; limit: number }> {
-    const { search, page = 1, limit = 10 } = query;
-    const skip = (page - 1) * limit;
-
-    const where = search
-      ? {
-          name: {
-            contains: search,
-            mode: 'insensitive' as const,
+  const result = await prisma.employee.findMany({
+    skip,
+    take: limit,
+    orderBy:
+      options.sortBy && options.sortOrder
+        ? { [options.sortBy]: options.sortOrder }
+        : {
+            createdAt: "desc",
           },
-        }
-      : {};
+  });
 
-    const [employees, total] = await Promise.all([
-      prisma.employee.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-      prisma.employee.count({ where }),
-    ]);
+  const total = await prisma.employee.count();
 
-    return {
-      employees,
+  return {
+    meta: {
       total,
       page,
       limit,
-    };
+    },
+    data: result,
+  };
+};
+
+// get employee by id
+const getEmployeeById = async (id: string): Promise<Employee | null> => {
+  const result = await prisma.employee.findUnique({
+    where: { id },
+  });
+
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Employee not found");
   }
 
-  async getEmployeeById(id: number): Promise<Employee | null> {
-    return await prisma.employee.findUnique({
-      where: { id },
-    });
-  }
+  return result;
+};
 
-  async updateEmployee(id: number, data: UpdateEmployeeDto): Promise<Employee> {
-    const employee = await prisma.employee.findUnique({
-      where: { id },
-    });
+// update employee
+const updateEmployee = async (
+  id: string,
+  data: UpdateEmployeeDto,
+): Promise<Employee> => {
+  return await prisma.employee.update({
+    where: { id },
+    data: {
+      ...data,
+      salary: data.salary ? data.salary : undefined,
+    },
+  });
+};
 
-    if (!employee) {
-      throw new Error('Employee not found');
-    }
+// delete employee
+const deleteEmployee = async (id: string): Promise<void> => {
+  await prisma.employee.delete({
+    where: { id },
+  });
+};
 
-    return await prisma.employee.update({
-      where: { id },
-      data: {
-        ...data,
-        salary: data.salary ? data.salary : undefined,
-      },
-    });
-  }
-
-  async deleteEmployee(id: number): Promise<void> {
-    const employee = await prisma.employee.findUnique({
-      where: { id },
-    });
-
-    if (!employee) {
-      throw new Error('Employee not found');
-    }
-
-    await prisma.employee.delete({
-      where: { id },
-    });
-  }
-}
+export const EmployeeService = {
+  createEmployee,
+  getAllEmployees,
+  getEmployeeById,
+  updateEmployee,
+  deleteEmployee,
+};

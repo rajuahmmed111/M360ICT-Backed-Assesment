@@ -1,163 +1,171 @@
-import { Request, Response } from 'express';
-import { EmployeeService } from './employee.service';
-import { CreateEmployeeInput, UpdateEmployeeInput, EmployeeQueryInput } from './employee.validation';
+import { Request, Response } from "express";
+import { EmployeeService } from "./employee.service";
+import { CreateEmployeeDto, UpdateEmployeeDto } from "./employee.types";
+import { pick } from "../../../shared/pick";
+import { paginationFields } from "../../../constants/pagination";
+import sendResponse from "../../../shared/sendResponse";
 
-export class EmployeeController {
-  constructor(private employeeService: EmployeeService) {}
+// create employee
+const createEmployee = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const employeeData: CreateEmployeeDto = req.body;
 
-  async createEmployee(req: Request, res: Response): Promise<void> {
-    try {
-      const employeeData: CreateEmployeeInput = req.body;
-      
-      // Handle file upload if present
-      if (req.file) {
-        employeeData.photoPath = req.file.filename;
-      }
-
-      const employee = await this.employeeService.createEmployee(employeeData);
-      
-      res.status(201).json({
-        success: true,
-        message: 'Employee created successfully',
-        data: employee,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-        });
-      }
+    // Handle file upload if present
+    if (req.file) {
+      employeeData.photoPath = req.file.filename;
     }
-  }
 
-  async getAllEmployees(req: Request, res: Response): Promise<void> {
-    try {
-      const query: EmployeeQueryInput = req.query as any;
-      const result = await this.employeeService.getAllEmployees(query);
-      
-      res.status(200).json({
-        success: true,
-        data: result,
+    const employee = await EmployeeService.createEmployee(employeeData);
+
+    res.status(201).json({
+      success: true,
+      message: "Employee created successfully",
+      data: employee,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
       });
-    } catch (error) {
+    } else {
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: "Internal server error",
       });
     }
   }
+};
 
-  async getEmployeeById(req: Request, res: Response): Promise<void> {
-    try {
-      const id = parseInt(req.params.id);
-      
-      if (isNaN(id)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid employee ID',
-        });
-        return;
-      }
+// get all employees
+const getAllEmployees = async (req: Request, res: Response): Promise<void> => {
+  const options = pick(req.query, paginationFields);
 
-      const employee = await this.employeeService.getEmployeeById(id);
-      
-      if (!employee) {
-        res.status(404).json({
-          success: false,
-          message: 'Employee not found',
-        });
-        return;
-      }
+  const result = await EmployeeService.getAllEmployees(options);
 
-      res.status(200).json({
-        success: true,
-        data: employee,
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Employees fetched successfully",
+    data: result,
+  });
+};
+
+// get employee by id
+const getEmployeeById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id;
+
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        message: "Employee ID is required",
       });
-    } catch (error) {
+      return;
+    }
+
+    const employee = await EmployeeService.getEmployeeById(id);
+
+    if (!employee) {
+      res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: employee,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// update employee
+const updateEmployee = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id;
+
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        message: "Employee ID is required",
+      });
+      return;
+    }
+
+    const updateData: UpdateEmployeeDto = req.body;
+
+    // Handle file upload if present
+    if (req.file) {
+      updateData.photoPath = req.file.filename;
+    }
+
+    const employee = await EmployeeService.updateEmployee(id, updateData);
+
+    res.status(200).json({
+      success: true,
+      message: "Employee updated successfully",
+      data: employee,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    } else {
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: "Internal server error",
       });
     }
   }
+};
 
-  async updateEmployee(req: Request, res: Response): Promise<void> {
-    try {
-      const id = parseInt(req.params.id);
-      
-      if (isNaN(id)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid employee ID',
-        });
-        return;
-      }
+// delete employee
+const deleteEmployee = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id;
 
-      const updateData: UpdateEmployeeInput = req.body;
-      
-      // Handle file upload if present
-      if (req.file) {
-        updateData.photoPath = req.file.filename;
-      }
-
-      const employee = await this.employeeService.updateEmployee(id, updateData);
-      
-      res.status(200).json({
-        success: true,
-        message: 'Employee updated successfully',
-        data: employee,
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        message: "Employee ID is required",
       });
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-        });
-      }
+      return;
+    }
+
+    await EmployeeService.deleteEmployee(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Employee deleted successfully",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
     }
   }
+};
 
-  async deleteEmployee(req: Request, res: Response): Promise<void> {
-    try {
-      const id = parseInt(req.params.id);
-      
-      if (isNaN(id)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid employee ID',
-        });
-        return;
-      }
-
-      await this.employeeService.deleteEmployee(id);
-      
-      res.status(200).json({
-        success: true,
-        message: 'Employee deleted successfully',
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-        });
-      }
-    }
-  }
-}
+export const EmployeeController = {
+  createEmployee,
+  getAllEmployees,
+  getEmployeeById,
+  updateEmployee,
+  deleteEmployee,
+};

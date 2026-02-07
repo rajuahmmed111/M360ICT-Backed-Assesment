@@ -1,4 +1,4 @@
-import { Employee as PrismaEmployee } from '@prisma/client';
+import { Employee as PrismaEmployee } from "@prisma/client";
 
 export type Employee = PrismaEmployee;
 
@@ -26,4 +26,13 @@ export interface EmployeeQueryParams {
   search?: string;
   page?: number;
   limit?: number;
+}
+
+export interface EmployeeListResponse {
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+  };
+  data: Employee[];
 }
