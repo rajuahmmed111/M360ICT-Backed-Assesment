@@ -53,9 +53,9 @@ model Employee {
 }
 
 model Attendance {
-  id          String   @id @default(uuid())
-  date        DateTime @db.Date
-  checkInTime DateTime @db.Time
+  id           String   @id @default(uuid())
+  date         DateTime
+  checkInTime  DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

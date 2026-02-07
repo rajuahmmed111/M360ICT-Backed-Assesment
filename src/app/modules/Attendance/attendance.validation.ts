@@ -1,19 +1,29 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const createAttendanceSchema = z.object({
-  employeeId: z.number().int().positive('Employee ID must be a positive integer'),
-  date: z.coerce.date(),
-  checkInTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: 'Check-in time must be in HH:MM format (24-hour)',
+  body: z.object({
+    employeeId: z.string({ required_error: "Employee ID is required" }),
+    date: z.coerce.date({ invalid_type_error: "Invalid date" }),
+ checkInTime: z
+  .string()
+  .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: "Check-in time must be in HH:MM 24-hour format",
+  }),
+
   }),
 });
 
 const updateAttendanceSchema = z.object({
-  employeeId: z.number().int().positive('Employee ID must be a positive integer').optional(),
-  date: z.coerce.date().optional(),
-  checkInTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: 'Check-in time must be in HH:MM format (24-hour)',
-  }).optional(),
+  body: z.object({
+    employeeId: z.string().optional(),
+    date: z.coerce.date().optional(),
+    checkInTime: z
+      .string()
+      .regex(/^([0]?[1-9]|1[0-2]):[0-5][0-9](:[0-5][0-9])?\s?(AM|PM)$/i, {
+        message: "Check-in time must be in HH:MM[:SS] AM/PM format",
+      })
+      .optional(),
+  }),
 });
 
 export const AttendanceValidation = {

@@ -4,8 +4,8 @@ export type Attendance = PrismaAttendance;
 
 export interface CreateAttendanceDto {
   employeeId: string;
-  date: Date;
-  checkInTime: string; // HH:MM format
+  date: Date; // YYYY-MM-DD
+  checkInTime: string; // "HH:MM:SS AM/PM"
 }
 
 export interface UpdateAttendanceDto {

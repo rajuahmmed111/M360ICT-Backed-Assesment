@@ -11,21 +11,21 @@ router.get("/", AttendanceController.getAllAttendance);
 // get attendance by id
 router.get("/:id", AttendanceController.getAttendanceById);
 
-// create or update an attendance entry
+// create or update attendance
 router.post(
   "/",
   validateRequest(AttendanceValidation.createAttendanceSchema),
   AttendanceController.createOrUpdateAttendance,
 );
 
-// update an attendance entry
+// update attendance
 router.patch(
   "/:id",
   validateRequest(AttendanceValidation.updateAttendanceSchema),
   AttendanceController.updateAttendance,
 );
 
-// delete an attendance entry
+// delete attendance
 router.delete("/:id", AttendanceController.deleteAttendance);
 
 export const attendanceRoutes = router;

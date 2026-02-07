@@ -13,50 +13,64 @@ import prisma from "../../../shared/prisma";
 // create or update attendance
 const createOrUpdateAttendance = async (
   data: CreateAttendanceDto,
-): Promise<Attendance> => {
+): Promise<any> => {
   const { employeeId, date, checkInTime } = data;
 
-  // check if employee exists
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
   });
-
   if (!employee) {
-    throw new Error("Employee not found");
+    throw new ApiError(httpStatus.NOT_FOUND, "Employee not found");
   }
 
-  // convert checkInTime string to time format
-  const [hours, minutes] = checkInTime.split(":");
-  const checkInDateTime = new Date(date);
-  checkInDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+  // Convert HH:MM → Date
+  const isoCheckInTime = new Date(`1970-01-01T${checkInTime}:00Z`);
 
-  // check if attendance already exists employee and date
+  const formatTimeTo12Hour = (date: Date) => {
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const attendanceDate = new Date(`${date}T00:00:00Z`);
+
   const existingAttendance = await prisma.attendance.findUnique({
     where: {
       employeeId_date: {
         employeeId,
-        date: new Date(date),
+        date: attendanceDate,
       },
     },
   });
 
   if (existingAttendance) {
-    // update existing
-    return await prisma.attendance.update({
+    const updatedAttendance = await prisma.attendance.update({
       where: { id: existingAttendance.id },
-      data: { checkInTime: checkInDateTime },
+      data: { checkInTime: isoCheckInTime },
     });
-  } else {
-    // create attendance
-    return await prisma.attendance.create({
-      data: {
-        employeeId,
-        date: new Date(date),
-        checkInTime: checkInDateTime,
-      },
-    });
+
+    return {
+      ...updatedAttendance,
+      checkInTime: formatTimeTo12Hour(updatedAttendance.checkInTime),
+    };
   }
+
+  const newAttendance = await prisma.attendance.create({
+    data: {
+      employeeId,
+      date: attendanceDate,
+      checkInTime: isoCheckInTime,
+    },
+  });
+
+  return {
+    ...newAttendance,
+    checkInTime: formatTimeTo12Hour(newAttendance.checkInTime),
+  };
 };
+
 
 // get all attendance with pagination
 const getAllAttendance = async (
@@ -87,7 +101,7 @@ const getAllAttendance = async (
   };
 };
 
-// getAttendanceById
+// get attendance by id
 const getAttendanceById = async (id: string): Promise<Attendance | null> => {
   const result = await prisma.attendance.findUnique({
     where: { id },
@@ -100,7 +114,7 @@ const getAttendanceById = async (id: string): Promise<Attendance | null> => {
   return result;
 };
 
-// updateAttendance
+// update attendance
 const updateAttendance = async (
   id: string,
   data: UpdateAttendanceDto,
@@ -128,7 +142,7 @@ const updateAttendance = async (
   });
 };
 
-// deleteAttendance
+// delete attendance
 const deleteAttendance = async (id: string): Promise<void> => {
   const attendance = await prisma.attendance.findUnique({
     where: { id },
