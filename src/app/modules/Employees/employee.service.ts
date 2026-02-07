@@ -9,13 +9,19 @@ import { paginationHelpers } from "../../../helpars/paginationHelper";
 import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
+import { Prisma } from "@prisma/client";
 
 // create employee
 const createEmployee = async (data: CreateEmployeeDto): Promise<Employee> => {
   return await prisma.employee.create({
     data: {
-      ...data,
-      salary: data.salary,
+      name: data.name,
+      age: Number(data.age),
+      designation: data.designation,
+      hiringDate: new Date(data.hiringDate),
+      dateOfBirth: new Date(data.dateOfBirth),
+      salary: Number(data.salary),
+      photoPath: data.photoPath,
     },
   });
 };
@@ -26,7 +32,13 @@ const getAllEmployees = async (
 ): Promise<EmployeeListResponse> => {
   const { page, limit, skip } = paginationHelpers.calculatedPagination(options);
 
+  // filters
+  const filters: Prisma.EmployeeWhereInput = {
+    deletedAt: null,
+  };
+
   const result = await prisma.employee.findMany({
+    where: filters, // filter apply
     skip,
     take: limit,
     orderBy:
@@ -37,7 +49,9 @@ const getAllEmployees = async (
           },
   });
 
-  const total = await prisma.employee.count();
+  const total = await prisma.employee.count({
+    where: filters,
+  });
 
   return {
     meta: {
@@ -49,10 +63,13 @@ const getAllEmployees = async (
   };
 };
 
-// get employee by id
+// get employee by id (excluding soft-deleted)
 const getEmployeeById = async (id: string): Promise<Employee | null> => {
-  const result = await prisma.employee.findUnique({
-    where: { id },
+  const result = await prisma.employee.findFirst({
+    where: {
+      id,
+      deletedAt: null, // soft-deleted filter
+    },
   });
 
   if (!result) {
@@ -71,7 +88,21 @@ const updateEmployee = async (
     where: { id },
     data: {
       ...data,
+      age: data.age ? Number(data.age) : undefined,
+      hiringDate: data.hiringDate ? new Date(data.hiringDate) : undefined,
+      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
       salary: data.salary ? data.salary : undefined,
+    },
+  });
+};
+
+// employee soft delete
+const softDeleteEmployee = async (id: string): Promise<void> => {
+  console.log(id)
+  await prisma.employee.update({
+    where: { id },
+    data: {
+      deletedAt: new Date(),
     },
   });
 };
@@ -88,5 +119,6 @@ export const EmployeeService = {
   getAllEmployees,
   getEmployeeById,
   updateEmployee,
+  softDeleteEmployee,
   deleteEmployee,
 };

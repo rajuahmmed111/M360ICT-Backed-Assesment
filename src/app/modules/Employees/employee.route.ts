@@ -19,21 +19,25 @@ router.post(
   "/",
   auth(),
   uploadFile.photoPath,
-  validateRequest(EmployeeValidation.createEmployeeSchema),
   parseBodyData,
+  validateRequest(EmployeeValidation.createEmployeeSchema),
   EmployeeController.createEmployee,
 );
 
 // update employee
 router.patch(
   "/:id",
+  auth(),
   uploadFile.photoPath,
-  validateRequest(EmployeeValidation.updateEmployeeSchema),
   parseBodyData,
+  validateRequest(EmployeeValidation.updateEmployeeSchema),
   EmployeeController.updateEmployee,
 );
 
+// employee soft delete
+router.patch("/soft-delete/:id", auth(), EmployeeController.softDeleteEmployee);
+
 // delete employee
-router.delete("/:id", EmployeeController.deleteEmployee);
+router.delete("/:id", auth(), EmployeeController.deleteEmployee);
 
 export const employeeRoutes = router;

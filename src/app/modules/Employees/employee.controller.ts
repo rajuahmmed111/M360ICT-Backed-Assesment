@@ -6,104 +6,132 @@ import { paginationFields } from "../../../constants/pagination";
 import sendResponse from "../../../shared/sendResponse";
 import { uploadFile } from "../../../helpars/fileUploader";
 import httpStatus from "http-status";
+import catchAsync from "../../../shared/catchAsync";
 
 // create employee
-const createEmployee = async (req: Request, res: Response): Promise<void> => {
-  const file = req.file;
+const createEmployee = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const file = req.file;
 
-  if (!file?.path) {
-    throw new Error("Employee photo is required");
-  }
+    if (!file?.path) {
+      throw new Error("Employee photo is required");
+    }
 
-  const uploadResult = await uploadFile.uploadToCloudinary(file);
+    const uploadResult = await uploadFile.uploadToCloudinary(file);
 
-  if (!uploadResult?.secure_url) {
-    throw new Error("Photo upload failed");
-  }
+    if (!uploadResult?.secure_url) {
+      throw new Error("Photo upload failed");
+    }
 
-  req.body.photoPath = uploadResult.secure_url;
+    req.body.photoPath = uploadResult.secure_url;
 
-  const result = await EmployeeService.createEmployee(req.body);
+    const result = await EmployeeService.createEmployee(req.body);
 
-  sendResponse(res, {
-    statusCode: 201,
-    success: true,
-    message: "Employee created successfully",
-    data: result,
-  });
-};
+    sendResponse(res, {
+      statusCode: 201,
+      success: true,
+      message: "Employee created successfully",
+      data: result,
+    });
+  },
+);
 
 // get all employees
-const getAllEmployees = async (req: Request, res: Response): Promise<void> => {
-  const options = pick(req.query, paginationFields);
+const getAllEmployees = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const options = pick(req.query, paginationFields);
 
-  const result = await EmployeeService.getAllEmployees(options);
+    const result = await EmployeeService.getAllEmployees(options);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Employees fetched successfully",
-    data: result,
-  });
-};
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Employees fetched successfully",
+      data: result,
+    });
+  },
+);
 
 // get employee by id
-const getEmployeeById = async (req: Request, res: Response): Promise<void> => {
-  const id = req.params.id;
+const getEmployeeById = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const id = req.params.id;
 
-  const result = await EmployeeService.getEmployeeById(id);
+    const result = await EmployeeService.getEmployeeById(id);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Employee fetched successfully",
-    data: result,
-  });
-};
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Employee fetched successfully",
+      data: result,
+    });
+  },
+);
 
 // update employee
-const updateEmployee = async (req: Request, res: Response): Promise<void> => {
-  const id = req.params.id;
+const updateEmployee = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const id = req.params.id;
 
-  const updateData: UpdateEmployeeDto = req.body;
+    const updateData: UpdateEmployeeDto = req.body;
 
-  // handle file upload
-  if (req.file) {
-    const cloudinaryResult = await uploadFile.uploadToCloudinary(req.file);
+    // handle file upload
+    if (req.file) {
+      const cloudinaryResult = await uploadFile.uploadToCloudinary(req.file);
 
-    if (cloudinaryResult) {
-      updateData.photoPath = cloudinaryResult.secure_url;
+      if (cloudinaryResult) {
+        updateData.photoPath = cloudinaryResult.secure_url;
+      }
     }
-  }
 
-  const employee = await EmployeeService.updateEmployee(id, updateData);
+    const employee = await EmployeeService.updateEmployee(id, updateData);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Employee updated successfully",
-    data: employee,
-  });
-};
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Employee updated successfully",
+      data: employee,
+    });
+  },
+);
+
+// employee soft delete
+const softDeleteEmployee = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const id = req.params.id;
+
+    const result = await EmployeeService.softDeleteEmployee(id);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Employee deleted successfully",
+      data: result,
+    });
+  },
+);
 
 // delete employee
-const deleteEmployee = async (req: Request, res: Response): Promise<void> => {
-  const id = req.params.id;
+const deleteEmployee = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const id = req.params.id;
 
-  const result = await EmployeeService.deleteEmployee(id);
+    const result = await EmployeeService.deleteEmployee(id);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Employee deleted successfully",
-    data: result,
-  });
-};
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Employee deleted successfully",
+      data: result,
+    });
+  },
+);
 
 export const EmployeeController = {
   createEmployee,
   getAllEmployees,
   getEmployeeById,
   updateEmployee,
+  softDeleteEmployee,
   deleteEmployee,
 };
