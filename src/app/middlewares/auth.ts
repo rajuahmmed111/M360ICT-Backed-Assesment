@@ -11,15 +11,14 @@ import prisma from "../../shared/prisma";
 
 //  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN)
 
-const auth = (...roles: string[]) => {
+const auth = () => {
   return async (
     req: Request & { user?: any },
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) => {
     try {
       const token = req.headers.authorization;
-      // console.log(token,"check token")
 
       if (!token) {
         throw new ApiError(httpStatus.UNAUTHORIZED, "You are not authorized!");
@@ -27,30 +26,24 @@ const auth = (...roles: string[]) => {
 
       const verifiedUser = jwtHelpers.verifyToken(
         token,
-        config.jwt.jwt_secret as Secret
+        config.jwt.jwt_secret as Secret,
       );
 
-      const user = await prisma.user.findUnique({
+      const hrUser = await prisma.hrUser.findUnique({
         where: {
           email: verifiedUser.email,
         },
       });
 
-      if (!user) {
-        throw new ApiError(httpStatus.NOT_FOUND, "This user is not found !");
+      if (!hrUser) {
+        throw new ApiError(httpStatus.NOT_FOUND, "HR user not found");
       }
 
-      const userStatus = user?.status;
-
-      if (userStatus === UserStatus.INACTIVE) {
-        throw new ApiError(httpStatus.FORBIDDEN, "This user is inactive !");
+      if (hrUser.status === UserStatus.INACTIVE) {
+        throw new ApiError(httpStatus.FORBIDDEN, "HR user is inactive");
       }
 
-      if (roles.length && !roles.includes(verifiedUser.role)) {
-      throw new ApiError(httpStatus.FORBIDDEN, "Forbidden!");
-      }
-
-      req.user = verifiedUser;
+      req.user = hrUser;
 
       next();
     } catch (err) {
