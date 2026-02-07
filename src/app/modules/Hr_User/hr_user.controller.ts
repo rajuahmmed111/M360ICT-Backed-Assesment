@@ -1,91 +1,51 @@
-import { Request, Response } from 'express';
-import { HrUserService } from './hr_user.service';
-import { CreateHrUserInput, LoginInput } from './hr_user.validation';
+import { Request, Response } from "express";
+import { HrUserService } from "./hr_user.service";
+import catchAsync from "../../../shared/catchAsync";
+import sendResponse from "../../../shared/sendResponse";
+import httpStatus from "http-status";
 
-export class HrUserController {
-  constructor(private hrUserService: HrUserService) {}
+// create hr user
+const createHrUser = catchAsync(async (req: Request, res: Response) => {
+  const userData = req.body;
+  const result = await HrUserService.createHrUser(userData);
 
-  async createHrUser(req: Request, res: Response): Promise<void> {
-    try {
-      const userData: CreateHrUserInput = req.body;
-      const user = await this.hrUserService.createHrUser(userData);
-      
-      res.status(201).json({
-        success: true,
-        message: 'HR user created successfully',
-        data: user,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-        });
-      }
-    }
-  }
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "HR user created successfully",
+    data: result,
+  });
+});
 
-  async login(req: Request, res: Response): Promise<void> {
-    try {
-      const loginData: LoginInput = req.body;
-      const result = await this.hrUserService.login(loginData);
-      
-      res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        data: result,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(401).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-        });
-      }
-    }
-  }
+// hr login
+const hrLogin = catchAsync(async (req: Request, res: Response) => {
+  const loginData = req.body;
+  const result = await HrUserService.hrLogin(loginData);
 
-  async getProfile(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).user?.id;
-      
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: 'Unauthorized',
-        });
-        return;
-      }
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Login successful",
+    data: result,
+  });
+});
 
-      const user = await this.hrUserService.getHrUserById(userId);
-      
-      if (!user) {
-        res.status(404).json({
-          success: false,
-          message: 'User not found',
-        });
-        return;
-      }
+// get hr user by id
+const getHrUserById = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
 
-      res.status(200).json({
-        success: true,
-        data: user,
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-  }
-}
+  const user = await HrUserService.getHrUserById(userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: "User found successfully",
+    success: true,
+    data: user,
+  });
+});
+
+export const HrUserController = {
+  createHrUser,
+  hrLogin,
+  getHrUserById,
+};
